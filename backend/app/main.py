@@ -79,11 +79,15 @@ async def startup_event():
 
 # 静的ファイル配信（ビルド済みフロントエンド）
 # Renderでは相対パスでなく絶対パスを使用
-static_dir = "./frontend/dist"
+static_dir = "/opt/render/project/src/frontend/dist"
 if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 else:
     logger.warning(f"静的ファイルディレクトリが見つかりません: {static_dir}")
+    # 404エラーをキャッチするためのルートエンドポイント追加
+    @app.get("/")
+    def root():
+        return {"message": "補助金ファインダー API - フロントエンド配信に問題があります"}
 
 # ルートエンドポイント
 @app.get("/api")

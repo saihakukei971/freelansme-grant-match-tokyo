@@ -20,14 +20,14 @@ class Settings(BaseSettings):
 
     # jGrants API
     JGRANTS_API_URL: str = os.getenv(
-        "JGRANTS_API_URL",
-        "https://api.jgrants-portal.go.jp/v2/subsidy"
+        "JGRANTS_API_URL", 
+        "https://api.jgrants-portal.go.jp/api/v2/subsidy"  # URLを修正
     )
-
+    
     # スクレイピング設定
     TOKYO_SUBSIDY_URL: str = os.getenv(
-        "TOKYO_SUBSIDY_URL",
-        "https://www.sangyo-rodo.metro.tokyo.lg.jp/chushou/shoko/sougyou/josei/"
+        "TOKYO_SUBSIDY_URL", 
+        "https://www.metro.tokyo.lg.jp/tosei/hodohappyo/press/2024/04/index.html"  # 公開されているページに変更
     )
     SCRAPE_INTERVAL_HOURS: int = int(os.getenv("SCRAPE_INTERVAL_HOURS", "24"))
 

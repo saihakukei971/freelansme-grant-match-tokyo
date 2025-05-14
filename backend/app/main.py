@@ -1,6 +1,7 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException  # HTTPExceptionを追加
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse  # FileResponseも追加
 import asyncio
 from loguru import logger
 import os

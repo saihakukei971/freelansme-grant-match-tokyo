@@ -8,8 +8,10 @@ from sqlalchemy.sql import func
 
 from .api import router as api_router
 from .config import settings
-from .database import create_db_and_tables
+from .database import create_db_and_tables, engine
 from .data_sources import update_all_subsidies
+from .models import Subsidy
+from sqlmodel import Session, select
 
 # ロガー設定
 logger.add(
@@ -34,25 +36,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# APIルーターを追加
-app.include_router(api_router, prefix="/api")
-
-# データ初期化と定期更新
-async def init_data():
-    """初期データの取得"""
-    logger.info("初期データの取得を開始")
-    try:
-        # 本番環境ではデータ取得を試みるが、失敗してもサンプルデータを用意
-        try:
-            result = await update_all_subsidies()
-            logger.info(f"初期データの取得完了: {result}")
-        except Exception as e:
-            logger.error(f"APIからのデータ取得に失敗: {e}")
-            # サンプルデータの作成
-            await create_sample_data()
-    except Exception as e:
-        logger.error(f"初期データの取得に失敗: {e}")
 
 # サンプルデータ作成（デモ用）
 async def create_sample_data():
@@ -128,7 +111,8 @@ async def create_sample_data():
     
     with Session(engine) as session:
         # 既存データの確認
-        existing_count = session.exec(func.count(Subsidy.id)).one()
+        query = select(func.count(Subsidy.id))
+        existing_count = session.exec(query).one()
         
         if existing_count == 0:
             logger.info(f"サンプルデータを作成します（{len(sample_data)}件）")
@@ -143,6 +127,25 @@ async def create_sample_data():
             logger.info(f"サンプルデータの作成完了: {len(sample_data)}件")
         else:
             logger.info(f"既存データが存在するため、サンプルデータは作成しません: {existing_count}件")
+
+# データ初期化と定期更新
+async def init_data():
+    """初期データの取得"""
+    logger.info("初期データの取得を開始")
+    try:
+        # データ取得を試みる
+        result = await update_all_subsidies()
+        logger.info(f"初期データの取得完了: {result}")
+        
+        # データが0件なら、サンプルデータを追加
+        if result["total"] == 0:
+            logger.info("データが0件のため、サンプルデータを追加します")
+            await create_sample_data()
+    except Exception as e:
+        # エラーが発生した場合もサンプルデータを追加
+        logger.error(f"初期データの取得に失敗: {e}")
+        logger.info("エラーのため、サンプルデータを追加します")
+        await create_sample_data()
 
 # バックグラウンドタスク
 async def scheduled_update():
@@ -167,11 +170,14 @@ async def startup_event():
     create_db_and_tables()
     
     # 初期データの取得
-    asyncio.create_task(init_data())
+    await init_data()  # asyncio.create_taskではなく直接呼び出し
     
     # 定期更新タスクの開始
     if settings.APP_ENV == "production":
         asyncio.create_task(scheduled_update())
+
+# APIルーターを追加
+app.include_router(api_router, prefix="/api")
 
 # 静的ファイル配信（ビルド済みフロントエンド）
 paths_to_try = [
@@ -218,14 +224,12 @@ def health_check():
 @app.get("/api/update", include_in_schema=False)
 async def trigger_update(background_tasks: BackgroundTasks):
     """手動更新トリガー（開発用）"""
-    if settings.APP_ENV != "production":
-        background_tasks.add_task(update_all_subsidies)
-        return {"message": "データ更新を開始しました"}
-    return {"message": "本番環境では手動更新は無効化されています"}
+    background_tasks.add_task(update_all_subsidies)
+    return {"message": "データ更新を開始しました"}
 
-# サンプルデータ生成エンドポイント（開発用）
+# サンプルデータ生成エンドポイント
 @app.get("/api/generate-samples", include_in_schema=False)
-async def generate_samples(background_tasks: BackgroundTasks):
-    """サンプルデータ生成（開発用）"""
-    background_tasks.add_task(create_sample_data)
-    return {"message": "サンプルデータの生成を開始しました"}
+async def generate_samples():
+    """サンプルデータ生成"""
+    await create_sample_data()  # 直接呼び出し
+    return {"message": "サンプルデータの生成を完了しました"}

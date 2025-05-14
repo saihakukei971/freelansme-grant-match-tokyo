@@ -184,7 +184,8 @@ paths_to_try = [
     "/opt/render/project/src/frontend/dist",
     "./frontend/dist",
     "../frontend/dist",
-    "./static"
+    "./static",
+    "/opt/render/project/src/backend/static"
 ]
 
 static_path = None
@@ -197,7 +198,20 @@ for path in paths_to_try:
         logger.debug(f"静的ファイルディレクトリが見つかりません: {path}")
 
 if static_path:
-    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+    # 静的ファイルを配信
+    app.mount("/assets", StaticFiles(directory=f"{static_path}/assets"), name="assets")
+    
+    # SPAのルートハンドリング
+    @app.get("/", include_in_schema=False)
+    async def serve_spa():
+        return FileResponse(f"{static_path}/index.html")
+    
+    # その他のルートも全てSPAにリダイレクト（APIを除く）
+    @app.get("/{path:path}", include_in_schema=False)
+    async def serve_spa_routes(path: str):
+        if not path.startswith("api/"):
+            return FileResponse(f"{static_path}/index.html")
+        raise HTTPException(status_code=404, detail="Not Found")
 else:
     logger.warning("静的ファイルディレクトリが見つかりません。APIのみが利用可能です。")
     

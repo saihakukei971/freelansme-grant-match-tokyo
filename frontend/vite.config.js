@@ -12,7 +12,7 @@ export default defineConfig({
       },
     },
   },
-  // ここにベースパスの設定を追加
+  // ベースパスとSPAモードの設定
   base: '/',
   build: {
     outDir: 'dist',

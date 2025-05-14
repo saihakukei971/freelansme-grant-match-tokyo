@@ -12,16 +12,4 @@ export default defineConfig({
       },
     },
   },
-  // ベースパスとSPAモードの設定
-  base: '/',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    // SPAモードを有効化
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
-    }
-  }
 })

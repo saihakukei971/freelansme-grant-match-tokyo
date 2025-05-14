@@ -78,10 +78,12 @@ async def startup_event():
         asyncio.create_task(scheduled_update())
 
 # 静的ファイル配信（ビルド済みフロントエンド）
-# フロントエンドのビルドファイルがある場合のみ有効化
-static_dir = os.path.join(os.path.dirname(__file__), '../../../frontend/dist')
+# Renderでは相対パスでなく絶対パスを使用
+static_dir = "./frontend/dist"
 if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+else:
+    logger.warning(f"静的ファイルディレクトリが見つかりません: {static_dir}")
 
 # ルートエンドポイント
 @app.get("/api")

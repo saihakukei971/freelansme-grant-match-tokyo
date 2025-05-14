@@ -1,3 +1,14 @@
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlmodel import Session, select, func
+from typing import List, Dict, Any, Optional
+from datetime import date
+
+from .database import get_session
+from .models import Subsidy
+
+# APIルーター
+router = APIRouter()  # この行が先頭にあるか確認
+
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_stats(
     db: Session = Depends(get_session)
@@ -27,3 +38,4 @@ async def get_stats(
         "active_count": active_count,
         "organizations": org_results
     }
+
